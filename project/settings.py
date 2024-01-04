@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
-
+import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure--uw560b&8i8_w3xyp36mvuanam-nnbst!9wbdko*#$hmt2ta+a
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.1.111','127.0.0.1','localhost','.vercel.app','educa-liart.vercel.app']
+ALLOWED_HOSTS = ['192.168.1.111','127.0.0.1','localhost','.vercel.app','educa-liart.vercel.app','.now.sh']
 
 
 # Application definition
@@ -63,10 +63,16 @@ CORS_ALLOWED_ORIGINS = [
     #'http://192.168.1.111:3000'
  
     'https://educa-liart.vercel.app',
-    'https://educa-liart.vercel.app/'
+   # 'https://educa-liart.vercel.app/'
     
 ]
 
+
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'static'),
+)
 
 CORS_ALLOW_ALL_ORIGINS = True
 
@@ -94,13 +100,24 @@ WSGI_APPLICATION = 'project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
+""" DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
-}
+} """
 
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'railway',
+        'USER': 'postgres',
+        'PASSWORD': 'aecDFad3cGEBE6cD3fb*GDf1aFF5444F',
+        'HOST': 'viaduct.proxy.rlwy.net',
+        'PORT': '37618',
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators

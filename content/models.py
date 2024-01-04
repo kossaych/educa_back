@@ -277,8 +277,7 @@ class BaseUser(AbstractUser,ModelWithSerializeOption) :
     date_of_birth = models.DateField(null=True, blank=True)
     image_cover = models.ImageField(upload_to = upload_to ,blank=True,default='default_user_cover.jpg')
     image_profile = models.ImageField(upload_to = upload_to,blank=True,default='default_user_profile.jpg')
-    
-    username = None
+    username = models.CharField(blank = True,null = True)
     REQUIRED_FIELDS = ['role','first_name','last_name','password']
     USERNAME_FIELD = 'email'
     def has_module_perms(self, app_label):
