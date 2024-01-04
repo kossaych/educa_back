@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure--uw560b&8i8_w3xyp36mvuanam-nnbst!9wbdko*#$hmt2ta+a
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['192.168.1.111','127.0.0.1','localhost','.vercel.app','educa-mu.vercel.app']
+ALLOWED_HOSTS = ['192.168.1.111','127.0.0.1','localhost','.vercel.app','educa-liart.vercel.app']
 
 
 # Application definition
@@ -61,10 +61,14 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     #'http://127.0.0.1:3000',
     #'http://192.168.1.111:3000'
-    'https://educa-mu.vercel.app/',
-    'https://educa-mu.vercel.app',
+ 
+    'https://educa-liart.vercel.app',
+    'https://educa-liart.vercel.app/'
     
 ]
+
+
+CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = 'project.urls'
 
