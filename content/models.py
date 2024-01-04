@@ -161,12 +161,13 @@ def validate_alpha(value) :
      if not(value.isalpha()) :
         raise ValueError('first and last name should contain only letters')
 
-
 def upload_to(instance,filename):
     extention = filename.split('.')[-1]
     filename = str(uuid.uuid4())+"."+(extention)
     return '/'.join([str(instance.first_name+instance.last_name),filename])
 
+
+ 
 class CodeVerification(models.Model):
     user = models.ForeignKey('BaseUser',editable=False, on_delete=models.CASCADE,primary_key  = True)
     code = models.CharField(
@@ -208,7 +209,7 @@ class CodeVerification(models.Model):
         self.code = code_hash 
         self.created_at = timezone.now()
         super(CodeVerification, self).save(*args, **kwargs)
-# users 
+ 
 class BaseUser(AbstractUser,ModelWithSerializeOption) :
     phone = models.CharField(
         validators=[validate_tunisian_phone_number],
@@ -323,21 +324,323 @@ class Student(ModelWithSerializeOption) :
         db_constraint=False ,
         on_delete = models.PROTECT
         )
-   
-class ParentOfStudent(ModelWithSerializeOption) : 
-    student =  models.ForeignKey('Student',on_delete = models.PROTECT)
-    parent =   models.ForeignKey('Parent',on_delete = models.PROTECT)
 
-class Parent(ModelWithSerializeOption) :
-    user = models.ForeignKey(
+
+
+class Course(ModelWithSerializeOption) :
+    title = models.CharField(
+        null=False,
+        blank=False,
+        max_length=100,  
+    )
+    teacher = models.ForeignKey(
         BaseUser,
-        db_constraint=False ,
-        on_delete = models.PROTECT
-        )
+        on_delete=models.CASCADE,
+        limit_choices_to={'role' : 'teacher'},
+        null=False,
+        blank=False,
+    )
+    chapiter = models.ForeignKey(
+        'Chapiter',
+        null=False,
+        blank=False,
+        on_delete=models.CASCADE, 
+      
+    )
+
+class Video(ModelWithSerializeOption):
+    title = models.CharField(
+        null=False,
+        blank=False,
+        max_length=100,  
+    )
+    course  = models.ForeignKey(
+        'Course',
+        null=False,
+        blank=False,
+        on_delete=models.CASCADE, 
+      
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+    url = models.URLField( 
+        null=False,
+        blank=False, 
+        unique=True,
+    
+    )
+    students_complete_content = models.ManyToManyField(
+        BaseUser, 
+        limit_choices_to= {'role' : 'student'},
+        related_name = 'completed_videos',
+        null=True,
+        blank=True
+    )
+    type = models.CharField(choices = [('exercice','exercice'),('cour','cour')],max_length = 100)
+    attachment = models.FileField()
+
+    def completed(self,user) :
+        return user in self.students_complete_content.all()
+    def __str__(self):
+        return self.title
  
-class Inscription(ModelWithSerializeOption) :
-    student =  models.ForeignKey('Student',on_delete = models.PROTECT)
-    group =  models.ForeignKey('Group',on_delete = models.PROTECT)
+ 
+class Summary(ModelWithSerializeOption): 
+
+    title = models.CharField(
+        null=False,
+        blank=False,
+        max_length=100,    
+    )
+    
+    file = models.FileField()
+     
+    course  = models.ForeignKey(
+        'Course',
+        null=False,
+        blank=False,
+        on_delete=models.CASCADE, 
+      
+    )
+    
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+     
+    def create_file_pages(self,image_format='png'):
+        pages = []
+        # Open the PDF file
+        pdf_path = os.path.join(settings.MEDIA_ROOT, str(self.file))
+        pdf_document = fitz.open(pdf_path)
+
+        # Iterate through each page
+        for page_num in range(pdf_document.page_count) :
+            # Get the page
+            page = pdf_document.load_page(page_num) 
+            # Convert the page to an image
+            pix = page.get_pixmap(alpha=False)
+ 
+            
+            # Save the image
+            image_name = f'page_{page_num + 1}.{image_format}'
+            try : 
+                os.mkdir(os.path.join(settings.MEDIA_ROOT,'summaries_images',str(self.title)))
+            except :
+                pass
+            image_path = os.path.join(settings.MEDIA_ROOT,'summaries_images',str(self.title), str(image_name))
+
+            pix.save(image_path)
+            SummaryPage.objects.create(summary = self,content = image_path,number = page_num + 1)
+
+            pages.append({'content' : image_path})
+        
+        # Close the PDF document
+        pdf_document.close() 
+
+    def save(self, *args, **kwargs) :
+        super(Summary, self).save(*args, **kwargs)
+
+        self.create_file_pages()
+ 
+    def __str__(self):
+        return self.title
+ 
+class SummaryPage(ModelWithSerializeOption) :
+    summary = models.ForeignKey('Summary',on_delete = models.PROTECT)
+    content = models.ImageField(blank=False,null=False) 
+    number = models.IntegerField(null = False,blank=  False) 
+    def __str__(self) :
+        return ' ' + str(str(self.summary) + 'page nombre ' + str(self.number))
+
+class Serie(ModelWithSerializeOption) : 
+    title = models.CharField(
+        null=False,
+        blank=False,
+        max_length=100, 
+        unique = True
+    )
+    course  = models.ForeignKey(
+        'Course',
+        null=False,
+        blank=False,
+        on_delete=models.CASCADE, 
+      
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+    students_complete_content = models.ManyToManyField(
+        BaseUser, 
+        limit_choices_to= {'role' : 'student'},
+        related_name = 'completed_series',
+        null=True,
+        blank=True
+    )
+    file = models.FileField(upload_to='pdf_files')
+ 
+    def create_file_pages(self,image_format='png'):
+        pages = []
+        # Open the PDF file
+        pdf_path = os.path.join(settings.MEDIA_ROOT, str(self.file))
+        pdf_document = fitz.open(pdf_path)
+
+        # Iterate through each page
+        for page_num in range(pdf_document.page_count) :
+            # Get the page
+            page = pdf_document.load_page(page_num) 
+            # Convert the page to an image
+            pix = page.get_pixmap(alpha=False)
+ 
+            
+            # Save the image
+            image_name = f'page_{page_num + 1}.{image_format}'
+            try : 
+                os.mkdir(os.path.join(settings.MEDIA_ROOT,'series_images',str(self.title)))
+            except :
+                pass
+            image_path = os.path.join(settings.MEDIA_ROOT,'series_images',str(self.title), str(image_name))
+
+            pix.save(image_path)
+            SeriePage.objects.create(serie = self,content = image_path,number = page_num + 1)
+
+            pages.append({'content' : image_path})
+        
+        # Close the PDF document
+        pdf_document.close() 
+         
+ 
+    def completed(self,user) :
+        return user in self.students_complete_content.all()
+    
+    def save(self, *args, **kwargs) :
+        super(Serie, self).save(*args, **kwargs)
+
+        self.create_file_pages()
+ 
+
+    
+    
+    def __str__(self) :
+        return 'chapitre ' + str(self.course) + ' : ' + str(self.title)
+
+class SeriePage(ModelWithSerializeOption) :
+    serie = models.ForeignKey('Serie',on_delete = models.PROTECT)
+    content = models.ImageField(blank=False,null=False) 
+    number = models.IntegerField(null = False,blank=  False) 
+    def __str__(self) :
+        return ' ' + str(str(self.serie) + 'page nombre ' + str(self.number))
+
+class Correction(ModelWithSerializeOption):
+    serie = models.ForeignKey(
+        'Serie',
+        null=False,
+        blank=False,
+        on_delete=models.CASCADE, 
+    )
+    file = models.FileField(upload_to='pdf_files')
+ 
+    def create_file_pages(self,image_format='png'):
+        pages = []
+        # Open the PDF file
+        pdf_path = os.path.join(settings.MEDIA_ROOT, str(self.file))
+        pdf_document = fitz.open(pdf_path)
+
+        # Iterate through each page
+        for page_num in range(pdf_document.page_count) :
+            # Get the page
+            page = pdf_document.load_page(page_num) 
+            # Convert the page to an image
+            pix = page.get_pixmap(alpha=False)
+ 
+            
+            # Save the image
+            image_name = f'page_{page_num + 1}.{image_format}'
+            
+             
+            image_path = os.path.join(settings.MEDIA_ROOT,'series_images',str(self.serie.title),'correction'+'_'+str(image_name))
+
+            pix.save(image_path)
+            CorrectionPage.objects.create(correction = self,content = image_path,number = page_num + 1)
+
+            pages.append({'content' : image_path})
+        
+        # Close the PDF document
+        pdf_document.close() 
+         
+  
+    def save(self, *args, **kwargs) :
+        super(Correction, self).save(*args, **kwargs)
+        self.create_file_pages()
+ 
+class CorrectionPage(ModelWithSerializeOption) :
+    correction = models.ForeignKey('Correction',on_delete = models.PROTECT)
+    content = models.ImageField(blank=False,null=False) 
+    number = models.IntegerField(null = False,blank=  False) 
+    def __str__(self) :
+        return ' ' + str(str(self.correction) + 'page nombre ' + str(self.number))
+
+ 
+# only administration can add and change thise tables
+class Subject(ModelWithSerializeOption) :
+ 
+    title = models.CharField(max_length=50) 
+    image = ResizedImageField(size=[64,46],upload_to='subject_images/', null=False, blank=False) 
+    def progress_subject(self,user) :  
+        try :
+           progress =   int((     (len(user.completed_videos.all()) + len(user.completed_series.all()))  * 100)/ (len(Video.objects.filter(course__chapiter__subject = self)) + len(Serie.objects.filter(course__chapiter__subject = self)))    )
+        except : 
+            progress = 0
+        return progress
+    def __str__(self):
+        return self.title
+
+class Level(ModelWithSerializeOption) : 
+    title = models.CharField(
+        max_length=100,
+        unique  = True,
+    )
+    image = models.ImageField(upload_to='subject_images/', null=False, blank=False)     
+    def __str__(self):
+        return self.title
+
+class Offer(ModelWithSerializeOption): 
+    title = models.CharField(
+        max_length=100,
+        primary_key=True,
+        error_messages={
+        "max_length": "Title should not exceed %(max)d characters.",
+    },)
+    description = models.TextField(null=False,blank=False  ,
+             error_messages={
+            "null": "Price per year cannot be null. Please provide a price.",
+            "blank": "Price per year cannot be left empty. Please provide a price.",
+    },)
+    price_per_month = models.DecimalField(max_digits=3, decimal_places=2,null=False,blank=False ,
+             error_messages={
+            "null": "Price per year cannot be null. Please provide a price.",
+            "blank": "Price per year cannot be left empty. Please provide a price.",
+    },)
+    discount = models.PositiveIntegerField(default= 0,null=False,
+            validators=[validate_discount],
+            error_messages={
+            "null": "Price per year cannot be null. Please provide a price.",
+            "blank": "Price per year cannot be left empty. Please provide a price.",
+    },)
+    image = models.ImageField(
+            upload_to='offer_images/',
+            error_messages={
+            'invalid_image': 'Invalid image format. Please upload a valid image.',
+    },) 
+    teacher = models.ForeignKey(
+        BaseUser,
+        on_delete=models.CASCADE,
+        limit_choices_to={'role' : 'teacher'},
+        null=False,
+        blank=False,
+    )
+    def __str__(self):
+        return self.title
 
 class GetOffer(ModelWithSerializeOption):
     offer = models.ForeignKey('Offer', on_delete=models.CASCADE,related_name='get_offer',related_query_name='get_offer')
@@ -384,85 +687,7 @@ class GetOffer(ModelWithSerializeOption):
         if  self.pk == None and len(offers) > 0:
                 raise ValueError("you can not get this offer you are alredy have a one")
         super(GetOffer, self).save(*args, **kwargs)
-
-class Level(ModelWithSerializeOption) : 
-    title = models.CharField(
-        max_length=100,
-        unique  = True,
-    )
-    image = models.ImageField(upload_to='subject_images/', null=False, blank=False) 
-     
-    def __str__(self):
-        return self.title
-
-class Group (ModelWithSerializeOption) :
-    professor =  models.ForeignKey('Professor',on_delete = models.PROTECT)  
-    title = models.CharField(
-        max_length=100,
-        error_messages={
-            "max_length": "Title is to long ",
-        },) 
-    level = models.ForeignKey('Level',on_delete = models.PROTECT) 
-    image = models.ImageField(upload_to='subject_images/', null=False, blank=False)  
-    def __str__(self):
-        return self.title
-
-class Offer(ModelWithSerializeOption): 
-    title = models.CharField(
-        max_length=100,
-        primary_key=True,
-        error_messages={
-        "max_length": "Title should not exceed %(max)d characters.",
-    },)
-    description = models.TextField(null=False,blank=False  ,
-             error_messages={
-            "null": "Price per year cannot be null. Please provide a price.",
-            "blank": "Price per year cannot be left empty. Please provide a price.",
-    },)
-    price_per_month = models.DecimalField(max_digits=3, decimal_places=2,null=False,blank=False ,
-             error_messages={
-            "null": "Price per year cannot be null. Please provide a price.",
-            "blank": "Price per year cannot be left empty. Please provide a price.",
-    },)
-    discount = models.PositiveIntegerField(default= 0,null=False,
-            validators=[validate_discount],
-            error_messages={
-            "null": "Price per year cannot be null. Please provide a price.",
-            "blank": "Price per year cannot be left empty. Please provide a price.",
-    },)
-    image = models.ImageField(
-            upload_to='offer_images/',
-            error_messages={
-            'invalid_image': 'Invalid image format. Please upload a valid image.',
-    },) 
-    teacher = models.ForeignKey(
-        BaseUser,
-        on_delete=models.CASCADE,
-        limit_choices_to={'role' : 'teacher'},
-        null=False,
-        blank=False,
-    )
-    def __str__(self):
-        return self.title
-
-# only administration can add and change thise tables
-class Subject(ModelWithSerializeOption) :
-    SUBJECT_TYPE_CHOICES = (
-        ('core', 'Core Subject'),
-        ('elective', 'Elective Subject'),
-     ) 
-    title = models.CharField(max_length=50) 
-    image = ResizedImageField(size=[64,46],upload_to='subject_images/', null=False, blank=False) 
-    def progress_subject(self,user) :  
-        try :
-           progress =   int((len(user.completed_videos.all()) * 100)/ len(Video.objects.filter(course__chapiter__subject = self)))
-        except : 
-            progress = 0
-        return progress
-    def __str__(self):
-        return self.title
-
-
+ 
 class Chapiter(ModelWithSerializeOption):
     title = models.CharField(
         unique=True,
@@ -499,6 +724,27 @@ class Chapiter(ModelWithSerializeOption):
 
 
 
+
+
+
+##### soon ##########
+
+class Group (ModelWithSerializeOption) :
+    professor =  models.ForeignKey('Professor',on_delete = models.PROTECT)  
+    title = models.CharField(
+        max_length=100,
+        error_messages={
+            "max_length": "Title is to long ",
+        },) 
+    level = models.ForeignKey('Level',on_delete = models.PROTECT) 
+    image = models.ImageField(upload_to='subject_images/', null=False, blank=False)  
+    def __str__(self):
+        return self.title
+
+class Inscription(ModelWithSerializeOption) :
+    student =  models.ForeignKey('Student',on_delete = models.PROTECT)
+    group =  models.ForeignKey('Group',on_delete = models.PROTECT)
+
 class Comment(ModelWithSerializeOption):
 
 
@@ -527,220 +773,17 @@ class Comment(ModelWithSerializeOption):
     class Meta: 
         get_latest_by = 'created_at'
  
+class ParentOfStudent(ModelWithSerializeOption) : 
+    student =  models.ForeignKey('Student',on_delete = models.PROTECT)
+    parent =   models.ForeignKey('Parent',on_delete = models.PROTECT)
 
-class Video(ModelWithSerializeOption):
-    title = models.CharField(
-        null=False,
-        blank=False,
-        max_length=100,
-       
-         
-    )
-    teacher = models.ForeignKey(
+class Parent(ModelWithSerializeOption) :
+    user = models.ForeignKey(
         BaseUser,
-        on_delete=models.CASCADE,
-        limit_choices_to={'role' : 'teacher'},
-        null=False,
-        blank=False,
-    )
-    chapiter = models.ForeignKey(
-        'Chapiter',
-        null=False,
-        blank=False,
-        on_delete=models.CASCADE, 
-      
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True
-    )
-    url = models.URLField( 
-        null=False,
-        blank=False, 
-        unique=True,
-    
-    )
-    students_complete_content = models.ManyToManyField(
-        BaseUser, 
-        limit_choices_to= {'role' : 'student'},
-        related_name = 'completed_videos',
-        null=True,
-        blank=True
-    )
-    type = models.CharField(choices = [('exercice','exercice'),('cour','cour')],max_length = 100)
-    
-    def completed(self,user) :
-        return user in self.students_complete_content.all()
-    def __str__(self):
-        return self.title
+        db_constraint=False ,
+        on_delete = models.PROTECT
+        )
  
-class AttachmentVideo(ModelWithSerializeOption) : 
-    video = models.ForeignKey(Video,on_delete = models.PROTECT)
-    file = models.FileField()
-    def __str__(self) : 
-        return   'attachment for video :' + str(self.video)
-
-class Summary(ModelWithSerializeOption):
- 
-    title = models.CharField(
-        null=False,
-        blank=False,
-        max_length=100,
-       
-         
-    )
-    teacher = models.ForeignKey(
-        BaseUser,
-        on_delete=models.CASCADE,
-        limit_choices_to={'role' : 'teacher'},
-        null=False,
-        blank=False,
-    )
-    course = models.ForeignKey(
-        'Chapiter',
-        null=False,
-        blank=False,
-        on_delete=models.CASCADE, 
-      
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True
-    )
-
-    def __str__(self):
-        return self.title
- 
-class SummaryPage(ModelWithSerializeOption) :
-    summary = models.ForeignKey('Summary',on_delete = models.PROTECT)
-    content = models.ImageField(blank=False,null=False) 
-    number = models.IntegerField(null = False,blank=  False) 
-    def __str__(self) :
-        return ' ' + str(str(self.summary) + 'page nombre ' + str(self.number))
-
-class Serie(ModelWithSerializeOption) : 
-    title = models.CharField(
-        null=False,
-        blank=False,
-        max_length=100, 
-    )
-    teacher = models.ForeignKey(
-        BaseUser,
-        on_delete=models.CASCADE,
-        limit_choices_to={'role' : 'teacher'},
-        null=False,
-        blank=False,
-    )
-    chapiter = models.ForeignKey(
-        'Chapiter',
-        null=False,
-        blank=False,
-        on_delete=models.CASCADE, 
-      
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True
-    )
-    students_complete_content = models.ManyToManyField(
-        BaseUser, 
-        limit_choices_to= {'role' : 'student'},
-        related_name = 'completed_series',
-        null=True,
-        blank=True
-    )
-    file = models.FileField(upload_to='pdf_files')
-    def get_content_images(self,image_format='png'):
-        pages = []
-        output_path='media/' + str(self.title) 
-        # Open the PDF file
-        pdf_path = os.path.join(settings.MEDIA_ROOT, str(self.file))
-        pdf_document = fitz.open(pdf_path)
-
-        # Iterate through each page
-        for page_num in range(pdf_document.page_count) :
-            # Get the page
-            page = pdf_document.load_page(page_num) 
-            # Convert the page to an image
-            pix = page.get_pixmap(alpha=False)
- 
-            
-            # Save the image
-            image_name = f'page_{page_num + 1}.{image_format}'
-            # image_path = f'{output_path}/{image_name}'
-            image_path = os.path.join(settings.MEDIA_ROOT,'series_images', str(image_name))
-            print('image path   :  ' ,image_path)
-            pix.save(image_path)
-
-            print(f'Page {page_num + 1} converted to {image_format.upper()} image: {image_path}') 
-            pages.append({'content' : image_path})
-        
-        # Close the PDF document
-        pdf_document.close() 
-        print(pages)
-        return pages
- 
-    def completed(self,user) :
-        return user in self.students_complete_content.all()
-    def __str__(self) :
-        return 'chapitre ' + str(self.chapiter) + ' : ' + str(self.title)
-
-
-
-
-
-
-
-class AttachmentSerie(ModelWithSerializeOption) : 
-    serie = models.ForeignKey(Serie,on_delete = models.PROTECT)
-    file = models.FileField()
-    def __str__(self) : 
-        return   'attachment for serie :' + str(self.serie)
-
-class Correction(ModelWithSerializeOption):
- 
-    title = models.CharField(
-        null=False,
-        blank=False,
-        max_length=100,
-       
-         
-    )
-    teacher = models.ForeignKey(
-        BaseUser,
-        on_delete=models.CASCADE,
-        limit_choices_to={'role' : 'teacher'},
-        null=False,
-        blank=False,
-    )
-    serie = models.ForeignKey(
-        'Serie',
-        null=False,
-        blank=False,
-        on_delete=models.CASCADE, 
-      
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True
-    )
-
-class AttachmentCorrection(ModelWithSerializeOption) : 
-    correction = models.ForeignKey(Correction,on_delete = models.PROTECT)
-    file = models.FileField()
-    def __str__(self) : 
-        return   'attachment for correction :' + str(self.correction)
-
-class SeriePage(ModelWithSerializeOption) :
-    serie = models.ForeignKey('Serie',on_delete = models.PROTECT)
-    content = models.ImageField(blank=False,null=False) 
-    number = models.IntegerField(null = False,blank=  False) 
-    def __str__(self) :
-        return ' ' + str(str(self.serie) + 'page nombre ' + str(self.number))
-
-class CorrectionPage(ModelWithSerializeOption) :
-    correction = models.ForeignKey('Correction',on_delete = models.PROTECT)
-    content = models.ImageField(blank=False,null=False) 
-    number = models.IntegerField(null = False,blank=  False) 
-    def __str__(self) :
-        return self.number
-
 ####################################
 @receiver(post_save,sender = BaseUser)
 def add_profil_and_token(sender,instance,created,**kwargs):
@@ -748,4 +791,3 @@ def add_profil_and_token(sender,instance,created,**kwargs):
             Token.objects.create(
                                     user = instance
                                 )  
-

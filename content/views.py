@@ -12,7 +12,6 @@ from django.core.mail import EmailMessage
   
 from serialiser import *
 
-
 from django.conf import settings 
 from django.http import FileResponse
 import os
@@ -304,7 +303,7 @@ class CheckCode(APIView):
 
         if code_hash == code_registed.code :
                 if code_registed.check_code_time() :
-                    code_registed.delete()
+                     
                     return Response(True,status=status.HTTP_200_OK) 
                 else :
                     import time
@@ -326,12 +325,8 @@ class SetPassword(APIView):
             user = BaseUser.objects.get(email=email)
         except :
             return Response('user not registed',status=status.HTTP_400_BAD_REQUEST)  
-    
-
-
-
+     
         code_hash = hashlib.sha256(code.encode('utf-8')).hexdigest() 
-
         try :
             code_registed = CodeVerification.objects.get(user=user.pk) 
         except :
@@ -358,6 +353,12 @@ class SetPassword(APIView):
             time.sleep(1)
             return Response("invalid code",status = status.HTTP_400_BAD_REQUEST) 
  
+
+
+
+
+
+
 class ChangePassword(APIView) :
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -381,6 +382,11 @@ class ChangePassword(APIView) :
             time.sleep(1)
             return Response('current password uncorrect',status.HTTP_400_BAD_REQUEST)                           
 
+
+
+
+
+
 class GetLevelsAPI(APIView) : 
     def get(self,request) :
         data = Level.objects.all()
@@ -397,7 +403,9 @@ class GetSubjectsAPI(APIView) :
             image = Field('image')
             ).serialize()
         return Response(serialised_data,status=status.HTTP_200_OK)
-      
+
+
+
 class SubjectPkAPI(APIView) : 
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -407,15 +415,12 @@ class SubjectPkAPI(APIView) :
         data = Subject.objects.filter(id = id).serialize(
             id = Field('id'),
             title = Field('title'),
-            image = Field('image'), 
-
-            chapiters = RelationField('subject',Chapiter).set_fields(
-                
+            image = Field('image'),  
+            chapiters = RelationField('subject',Chapiter).set_fields( 
                 progress = FunctionField('progress_chapiter',user),
                 title = Field('title'),
                 id = Field('id')
-                ),   
-
+                ),    
             progress = FunctionField('progress_subject',user)
            )
              
@@ -426,78 +431,66 @@ class SubjectPkAPI(APIView) :
 
 class ChapiterPkAPI(APIView) : 
     authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-    
+    permission_classes = [IsAuthenticated] 
     def get(self,request,id) :
         user = request.user
-        data = Chapiter.objects.get(id = id).serialize( 
+        data = Chapiter.objects.get(id = id).serialize(    
 
             id = Field('id'),
             title = Field('title'),   
-            videos_cour = RelationField('chapiter',Video).set_fields(
-                    title = Field('title'),
-                    type = Field('type'),
-                    createdAt  = Field('created_at'),
-                    url = Field('url'),
-                    completed = FunctionField('completed',user),
-                    attachment = RelationField('video',AttachmentVideo),
+            courses = RelationField('chapiter',Course).set_fields( 
+                
+                teacher = RelationField('teacher').set_fields(
+                            id = Field('id'),
+                            firstName = Field('first_name'),
+                            lastName = Field('last_name'),
+                            imgProfile = Field('image_profile'),
+                            imgCover = Field('image_cover') 
+                        ),
+                videos_cour = RelationField('course',Video).set_fields(
+                        title = Field('title'),
+                        type = Field('type'),
+                        createdAt  = Field('created_at'),
+                        url = Field('url'),
+                        completed = FunctionField('completed',user),
+                        attachment = Field('attachment')
+                        
 
-                    teacher = RelationField('teacher').set_fields(
-                        id = Field('id'),
-                        firstName = Field('first_name'),
-                        lastName = Field('last_name'),
-                        imgProfile = Field('image_profile'),
-                        imgCover = Field('image_cover') 
-                    )
+                    ).set_filters(type = 'cour'),
+                videos_exercice = RelationField('course',Video).set_fields(
+                        title = Field('title'),
+                        type = Field('type'),
+                        createdAt  = Field('created_at'),
+                        url = Field('url'),
+                        completed = FunctionField('completed',user),
+                        attachment = Field('attachment')
+                         
 
-                ).set_filters(type = 'cour'),
-            videos_exercice = RelationField('chapiter',Video).set_fields(
-                    title = Field('title'),
-                    type = Field('type'),
-                    createdAt  = Field('created_at'),
-                    url = Field('url'),
-                    completed = FunctionField('completed',user),
-                    attachment = RelationField('video',AttachmentVideo),
-                    teacher = RelationField('teacher').set_fields(
-                        id = Field('id'),
-                        firstName = Field('first_name'),
-                        lastName = Field('last_name'),
-                        imgProfile = Field('image_profile'),
-                        imgCover = Field('image_cover') 
-                    )
-
-                ).set_filters(type = 'exercice'),
-            series = RelationField('chapiter',Serie).set_fields(
-                    title = Field('title'),
-                    created_at  = Field('created_at'), 
-                    pagesj = RelationField('serie',SeriePage).set_fields(content = Field('content')),  
-                    pages = FunctionField('get_content_images'),  
-
-                    completed = FunctionField('completed',user),
-                    attachment = RelationField('serie',AttachmentSerie),
-                    correction = RelationField('serie',Correction).set_fields(
-                            title = Field('title'), 
-                            attachment = RelationField('correction',AttachmentCorrection),
-                            pages = RelationField('correction',CorrectionPage),
-                            teacher = RelationField('teacher').set_fields(
-                                id = Field('id'),
-                                firstName = Field('first_name'),
-                                lastName = Field('last_name'),
-                                imgProfile = Field('image_profile'),
-                                imgCover = Field('image_cover') 
-                            )
+                    ).set_filters(type = 'exercice'),
+                
+                series = RelationField('course',Serie).set_fields(
+                        title = Field('title'),
+                        created_at  = Field('created_at'), 
+                        pages = RelationField('serie',SeriePage).set_fields(content = Field('content')), 
+                        completed = FunctionField('completed',user),
+                        attachment = Field('file'),
+                        correction = RelationField('serie',Correction).set_fields(
+                                attachment = Field('file'),
+                                pages = RelationField('correction',CorrectionPage).set_fields(content = Field('content')),    
+                        ), 
                     ),
-                    teacher = RelationField('teacher').set_fields(
-                        id = Field('id'),
-                        firstName = Field('first_name'),
-                        lastName = Field('last_name'),
-                        imgProfile = Field('image_profile'),
-                        imgCover = Field('image_cover') 
-                    )
-                )
-            
-            )
+                summaries = RelationField('course',Summary).set_fields(
+                        title = Field('title'),
+                        created_at  = Field('created_at'), 
+                        attachment = Field('file'),
+                        pages = RelationField('summary',SummaryPage).set_fields(content = Field('content')), 
+
+                         
+                    )   
+                
+                )  
+        
+        )
  
         return Response(data,status=status.HTTP_200_OK)
    
-

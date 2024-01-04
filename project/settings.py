@@ -142,20 +142,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
  
-
-# Configuration de la file d'attente (broker) - par exemple, Redis
-CELERY_BROKER_URL = 'redis://127.0.0.1:6379'
-
-# Configuration du backend de résultat - par exemple, Redis
-CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6378'
-
-
-
-
-
-
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' 
 EMAIL_USE_TLS = True
 EMAIL_HOST = 'smtp.gmail.com'
@@ -168,5 +155,4 @@ EMAIL_HOST_PASSWORD = 'odeckaxrrnulnxfd'
 EMAIL_PORT = 587
 
  
-
 AUTH_USER_MODEL = 'content.BaseUser'

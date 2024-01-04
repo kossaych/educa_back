@@ -13,7 +13,7 @@ admin.site.register(Subject)
 admin.site.register(Level)
 admin.site.register(Group)
 admin.site.register(Offer)
- 
+admin.site.register(Course)
 admin.site.register(Chapiter)
  
 admin.site.register(Comment) 
@@ -26,6 +26,4 @@ admin.site.register(Professor)
 
 admin.site.register(SeriePage)
 admin.site.register(CorrectionPage)
-admin.site.register(AttachmentVideo)
-admin.site.register(AttachmentSerie)
-admin.site.register(AttachmentCorrection)
+  
