@@ -12,8 +12,21 @@ urlpatterns = [
 
     path('api/get_levels/',views.GetLevelsAPI.as_view()),
     path('api/get_addreses/',views.GetAddresesAPI.as_view()),
-    path('api/get_disciplines/',views.GetSubjectsAPI.as_view()),
+    path('api/get_disciplines/',views.GetDesiplinesAPI.as_view()),
     path('api/subject/<int:id>',views.SubjectPkAPI.as_view()),
+    path('api/get_subjects/',views.GetSubjectsAPI.as_view()),
+    path('api/get_teacher_courses/',views.GetTeacherCoursesAPI.as_view()),
+    path('api/get_teacher_desipline_chapiters/',views.GetTeacherDesiplineChapitersAPI.as_view()),
+
+
+    path('api/course/',views.CourseAPI.as_view()),
+    path('api/course_pk/<int:id>',views.CoursePkAPI.as_view()),
+    path('api/video/',views.VideoAPI.as_view()),
+
+
+
+
+
     path('api/chapiter/<int:id>',views.ChapiterPkAPI.as_view()),
 
 

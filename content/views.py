@@ -151,6 +151,7 @@ class RegisterView(APIView):
                 user.set_password(password)
                 user.save() 
             except Exception as e:  
+                 
                 try :
                     return Response(str(e.messages[0]),status=status.HTTP_400_BAD_REQUEST)
                 except :
@@ -221,7 +222,7 @@ class ActivateUser(APIView):
                     import time
                     time.sleep(1)
                     return Response("code not sended to your email",status = status.HTTP_400_BAD_REQUEST) 
-
+                print(code_hash,code_registed.code)
                 if code_hash == code_registed.code :
                         if code_registed.check_code_time() :
                             code_registed.delete() 
@@ -300,7 +301,7 @@ class CheckCode(APIView):
             import time
             time.sleep(1)
             return Response("code not sended to your email",status = status.HTTP_400_BAD_REQUEST) 
-
+        print(code_hash, code_registed,'/' * 200)
         if code_hash == code_registed.code :
                 if code_registed.check_code_time() :
                      
@@ -390,10 +391,10 @@ class ChangePassword(APIView) :
 class GetLevelsAPI(APIView) : 
     def get(self,request) :
         data = Level.objects.all()
-        serialised_data = Serializer(data,id = Field('id'),level = Field('title')).serialize()
+        serialised_data = Serializer(data,id = Field('id'),level = Field('title'),image = Field('image')).serialize()
         return Response(serialised_data,status=status.HTTP_200_OK)
 
-class GetSubjectsAPI(APIView) :
+class GetDesiplinesAPI(APIView) :
     def get(self,request) :
         data = Subject.objects.all()
         serialised_data = Serializer(
@@ -404,7 +405,28 @@ class GetSubjectsAPI(APIView) :
             ).serialize()
         return Response(serialised_data,status=status.HTTP_200_OK)
 
+class GetSubjectsAPI(APIView) :
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get(self,request) :
+        try : 
+            student = Student.objects.get(user = request.user)
+            subjects = student.level.subjects.all().serialize()
+        except : 
+            subjects  = []
+        return Response(subjects,status=status.HTTP_200_OK)
 
+class GetTeacherCoursesAPI(APIView) :
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get(self,request) :
+        try : 
+            teacher_courses = Course.objects.filter(teacher = request.user).serialize()
+        except : 
+            teacher_courses  = []
+        return Response(teacher_courses,status=status.HTTP_200_OK)
 
 class SubjectPkAPI(APIView) : 
     authentication_classes = [TokenAuthentication]
@@ -426,20 +448,22 @@ class SubjectPkAPI(APIView) :
              
         return Response(data,status=status.HTTP_200_OK)
 
-
-
-
 class ChapiterPkAPI(APIView) : 
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated] 
     def get(self,request,id) :
         user = request.user
+        try :
+           user_level = Student.objects.get(user = user).level
+        except : 
+            user_level = ""
+        print(user_level,'*******'*100)
         data = Chapiter.objects.get(id = id).serialize(    
 
             id = Field('id'),
             title = Field('title'),   
             courses = RelationField('chapiter',Course).set_fields( 
-                
+                title = Field('title'),
                 teacher = RelationField('teacher').set_fields(
                             id = Field('id'),
                             firstName = Field('first_name'),
@@ -453,20 +477,16 @@ class ChapiterPkAPI(APIView) :
                         createdAt  = Field('created_at'),
                         url = Field('url'),
                         completed = FunctionField('completed',user),
-                        attachment = Field('attachment')
-                        
-
-                    ).set_filters(type = 'cour'),
+                        attachment = Field('attachment') 
+                    ).set_filters(type = 'course',status = 'published',levels__title__in = [user_level]),
                 videos_exercice = RelationField('course',Video).set_fields(
                         title = Field('title'),
                         type = Field('type'),
                         createdAt  = Field('created_at'),
                         url = Field('url'),
                         completed = FunctionField('completed',user),
-                        attachment = Field('attachment')
-                         
-
-                    ).set_filters(type = 'exercice'),
+                        attachment = Field('attachment') 
+                    ).set_filters(type = 'exercice',status = 'published',levels__title__in = [user_level]),
                 
                 series = RelationField('course',Serie).set_fields(
                         title = Field('title'),
@@ -479,18 +499,207 @@ class ChapiterPkAPI(APIView) :
                                 pages = RelationField('correction',CorrectionPage).set_fields(content = Field('content')),    
                         ), 
                     ),
+               
                 summaries = RelationField('course',Summary).set_fields(
                         title = Field('title'),
                         created_at  = Field('created_at'), 
                         attachment = Field('file'),
-                        pages = RelationField('summary',SummaryPage).set_fields(content = Field('content')), 
+                        pages = RelationField('summary',SummaryPage).set_fields(
+                            content = Field('content')
+                            ), 
 
                          
                     )   
                 
-                )  
-        
+                ).set_filters(status = 'published',levels__title__in = [user_level])
         )
  
         return Response(data,status=status.HTTP_200_OK)
    
+class GetTeacherDesiplineChapitersAPI(APIView) :
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get(self,request) :
+         
+        teacher = Professor.objects.get(user = request.user) 
+        chapiters = Chapiter.objects.filter(subject = teacher.discipline).serialize( 
+             title=Field('title'),
+             levels = RelationField('levels'),
+             id = Field('id')
+ 
+        ) 
+       
+        return Response(chapiters,status=status.HTTP_200_OK)
+
+
+class Create_Course(APIView) : 
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    def post(self,request) :
+        #get data 
+        try :
+            title = request.data.get('title').strip()
+            chapiter = request.data.get('chapiter')
+            first_name = request.data.get('firstName').strip()
+            levels = request.data.get('levels').strip()
+            phone = request.data.get('phone').strip()
+            address = request.data.get('address').strip() 
+            sex = request.data.get('sex').strip() 
+            role = request.data.get('role') 
+        except Exception as e :
+                return Response('Incomplete data',status=status.HTTP_400_BAD_REQUEST)
+
+class CourseAPI(APIView) : 
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    def post(self,request) :
+        user = request.user
+        
+        if user.role == 'teacher' :
+            status_course = request.data.get('status')
+            title = request.data.get('title')
+            try : 
+                chapiter = Chapiter.objects.get(id = request.data.get('chapiter'))
+            except :
+                return Response('invalid chapiter  choice',status=status.HTTP_400_BAD_REQUEST)
+            course = Course(
+                status = status_course,
+                teacher =  user,
+                title =  title , 
+                chapiter =  chapiter 
+            )
+            try : 
+                course.full_clean()
+                course.save()
+                return Response(course.id,status=status.HTTP_200_OK)
+            except Exception as e :
+                return Response(str(e.messages[0]) , status = status.HTTP_400_BAD_REQUEST)
+            
+        else : return Response('ou are not allowed to create a course you must be a teacher')
+class CoursePkAPI(APIView) : 
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get(self,request,id) : 
+        course = Course.objects.get(id = id).serialize(
+            id = Field('id'),
+            title = Field('title'),
+            status = Field('status'),
+            chapiter = RelationField('chapiter').set_fields(
+                id = Field('id'), 
+                levels = RelationField('levels')
+            ),
+            videos = RelationField('course',model=Video).set_fields(
+                id = Field('id'), 
+                title  = Field('title'), 
+                type = Field('type'),
+                attachment = Field('attachment'), 
+                status = Field('status'),
+                url = Field('url'), 
+            )   
+            )
+        return Response(course,status=status.HTTP_200_OK)
+    def put(self,request,id) : 
+        user = request.user
+        
+        if user.role == 'teacher' :
+            status_course = request.data.get('status')
+            title = request.data.get('title')
+            try : 
+                course = Course.objects.get(id = id)
+            except :
+                return Response('Course not found',status=status.HTTP_400_BAD_REQUEST)
+            
+            try : 
+                chapiter = Chapiter.objects.get(id = request.data.get('chapiter'))
+            except :
+                try : 
+                    chapiter = Chapiter.objects.get(id = request.data.get('chapiter')['id'])
+                except :   
+                    return Response('invalid chapiter  choice',status=status.HTTP_400_BAD_REQUEST)
+            
+             
+            course.status = status_course
+            course.title =  title 
+            course.chapiter =  chapiter 
+             
+
+            try : 
+                course.full_clean()
+                course.save()
+                return Response(status=status.HTTP_200_OK)
+            except Exception as e :
+                return Response(str(e.messages[0]) , status = status.HTTP_400_BAD_REQUEST)
+            
+        else : return Response('ou are not allowed to create a course you must be a teacher')
+
+
+class VideoAPI(APIView) : 
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+ 
+    def post (self,request) : 
+        if request.user.role == 'teacher' :   
+            title = request.data.get('title')
+            course = Course.objects.get(id = request.data.get('course'))
+            url = request.data.get('url')
+            type = request.data.get('type')
+            video = request.data['file']
+            attachment = request.data.get('attachment')
+            video_status = request.data.get('status')
+            if title == '' :
+                return Response('écrire le titre du video',status=status.HTTP_400_BAD_REQUEST)
+
+
+            if attachment == ''  :
+                return Response('select an attachment',status=status.HTTP_400_BAD_REQUEST)
+            
+
+
+
+            if url[:6] == '<iframe>'[:6] :
+                 url = (url[url.find('https'):url.find('" title="')]).strip()
+
+            if url == '' and video == "" :
+                return Response('select a video from your device or integrate a youtube url',status=status.HTTP_400_BAD_REQUEST)
+           
+           
+            if url !='' and url[:len("https://www.youtube.com/embed/")] != "https://www.youtube.com/embed/" and url[:len("https://youtu.be/")] != "https://youtu.be/"  :
+                return Response(' integrated url is not a youtube url',status=status.HTTP_400_BAD_REQUEST)
+            
+            
+            if url[:len("https://youtu.be/")] == "https://youtu.be/" :
+                url = "https://www.youtube.com/embed/" + url[url.find('/',15) + 1 : url.find('?')]
+
+
+
+
+
+
+
+            if Video.objects.filter(url = url) : 
+                print(url)
+                return Response('this video with this url already exist',status=status.HTTP_400_BAD_REQUEST)
+
+            try : 
+                video = Video.objects.create( 
+                    title =  title,
+                    course = course,
+                    url = url,
+                    type = type,
+                    video = video,
+                    attachment = attachment,
+                    status = video_status
+
+                 ) 
+                video.save()
+                return Response(status=status.HTTP_200_OK)
+
+            except Exception as e :
+                return Response(str(e),status=status.HTTP_400_BAD_REQUEST)
+        
+             
+                
+            
+        else : return Response('ou are not allowed to create a course you must be a teacher')
+           

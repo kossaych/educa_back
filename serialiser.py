@@ -75,8 +75,7 @@ class RelationField (BaseField) :
         except :
             related_model = None
 
-        if (related_model != None) : 
-             
+        if (related_model != None) :  
             related_object = related_model.objects.filter(
                 **{field.related_field : obj},
                 **filters

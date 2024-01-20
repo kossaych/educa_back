@@ -167,11 +167,19 @@ def upload_to(instance,filename):
     return '/'.join([str(instance.first_name+instance.last_name),filename])
 
 
+def upload_videos(instance,filename):
+    extention = filename.split('.')[-1]
+    filename = str(uuid.uuid4())+"."+(extention)
+    instance.url =  'http://192.168.1.111:8000/media' +'/'.join([str(instance.course.title+'/'+instance.type),filename])
+
+    return '/'.join([str(instance.course.title+'/'+instance.type),filename])
+
+
  
 class CodeVerification(models.Model):
     user = models.ForeignKey('BaseUser',editable=False, on_delete=models.CASCADE,primary_key  = True)
     code = models.CharField(
-        max_length=8,
+        max_length=255,
         editable=False,
         null = False,
         unique=True,
@@ -213,7 +221,7 @@ class CodeVerification(models.Model):
 class BaseUser(AbstractUser,ModelWithSerializeOption) :
     phone = models.CharField(
         validators=[validate_tunisian_phone_number],
-        max_length=8,
+        max_length = 50,
         error_messages={
             "blank" : 'please write your phone number',
             "unique" : "phone number already used",
@@ -277,7 +285,8 @@ class BaseUser(AbstractUser,ModelWithSerializeOption) :
     date_of_birth = models.DateField(null=True, blank=True)
     image_cover = models.ImageField(upload_to = upload_to ,blank=True,default='default_user_cover.jpg')
     image_profile = models.ImageField(upload_to = upload_to,blank=True,default='default_user_profile.jpg')
-    username = models.CharField(blank = True,null = True)
+  
+    username = None
     REQUIRED_FIELDS = ['role','first_name','last_name','password']
     USERNAME_FIELD = 'email'
     def has_module_perms(self, app_label):
@@ -324,8 +333,6 @@ class Student(ModelWithSerializeOption) :
         on_delete = models.PROTECT
         )
 
-
-
 class Course(ModelWithSerializeOption) :
     title = models.CharField(
         null=False,
@@ -345,13 +352,29 @@ class Course(ModelWithSerializeOption) :
         blank=False,
         on_delete=models.CASCADE, 
       
+    )     
+    status = models.CharField(choices = (('published','published'),('unpublished','unpublished')),max_length = 20)
+    levels =   models.ManyToManyField(
+        'Level',
+        related_name = 'course_levels',
+        null=False,
+        blank=False
     )
+    class Meta() :
+        unique_together = [["title", "chapiter"]]
+
+
+# to ensure that each video is related to its course
+def validate_chapiter_levels_is_in_its_subject_levels(level) : 
+    level = Level.objects.get(id = level,)
+ 
+
 
 class Video(ModelWithSerializeOption):
-    title = models.CharField(
-        null=False,
-        blank=False,
+    title = models.CharField( 
         max_length=100,  
+        null=False,
+        blank=False
     )
     course  = models.ForeignKey(
         'Course',
@@ -363,11 +386,11 @@ class Video(ModelWithSerializeOption):
     created_at = models.DateTimeField(
         auto_now_add=True
     )
-    url = models.URLField( 
-        null=False,
-        blank=False, 
-        unique=True,
-    
+    url = models.CharField( 
+        max_length  = 255,
+        blank = True,
+        null = False,
+         
     )
     students_complete_content = models.ManyToManyField(
         BaseUser, 
@@ -376,15 +399,40 @@ class Video(ModelWithSerializeOption):
         null=True,
         blank=True
     )
-    type = models.CharField(choices = [('exercice','exercice'),('cour','cour')],max_length = 100)
-    attachment = models.FileField()
+    type = models.CharField(choices = [('exercice','exercice'),('course','course')],max_length = 100,null=False,blank=False)
+    video = models.FileField(upload_to= upload_videos,null=False,blank=False)
+    attachment = models.FileField(blank=False,null=False) 
+    status = models.CharField(choices = (('published','published'),('unpublished','unpublished')),max_length = 20)
+    is_free = models.BooleanField(default = False)
+    # people with these levels can see this video
+    levels =   models.ManyToManyField(
+        'Level',
+        related_name = 'level_videos',
+        null=False,
+         
+        blank=False
+    )
+    # people who got this offer can watch the video 
+    offers =   models.ManyToManyField(
+        'Offer',
+        related_name = 'offer_videos',
+        blank=True,
+        null =True,
+         
+    )
+    
 
     def completed(self,user) :
         return user in self.students_complete_content.all()
     def __str__(self):
         return self.title
- 
- 
+    def save(self, *args, **kwargs) :
+        if str(self.video) not in ['','1']:
+            self.url =  'http://192.168.1.111:8000/media/' + str(self.video)
+        super(Video, self).save(*args, **kwargs)
+    class Meta() :
+        unique_together = [["title", "course"]]
+
 class Summary(ModelWithSerializeOption): 
 
     title = models.CharField(
@@ -439,7 +487,7 @@ class Summary(ModelWithSerializeOption):
 
     def save(self, *args, **kwargs) :
         super(Summary, self).save(*args, **kwargs)
-
+ 
         self.create_file_pages()
  
     def __str__(self):
@@ -495,11 +543,15 @@ class Serie(ModelWithSerializeOption) :
             # Save the image
             image_name = f'page_{page_num + 1}.{image_format}'
             try : 
+                os.mkdir(os.path.join(settings.MEDIA_ROOT,'series_images'))
+            except :
+                pass
+            try : 
                 os.mkdir(os.path.join(settings.MEDIA_ROOT,'series_images',str(self.title)))
             except :
                 pass
             image_path = os.path.join(settings.MEDIA_ROOT,'series_images',str(self.title), str(image_name))
-
+            print(image_path,'///////////*****************-+++++++++++++32589+')
             pix.save(image_path)
             SeriePage.objects.create(serie = self,content = image_path,number = page_num + 1)
 
@@ -508,7 +560,7 @@ class Serie(ModelWithSerializeOption) :
         # Close the PDF document
         pdf_document.close() 
          
- 
+
     def completed(self,user) :
         return user in self.students_complete_content.all()
     
@@ -516,10 +568,7 @@ class Serie(ModelWithSerializeOption) :
         super(Serie, self).save(*args, **kwargs)
 
         self.create_file_pages()
- 
 
-    
-    
     def __str__(self) :
         return 'chapitre ' + str(self.course) + ' : ' + str(self.title)
 
@@ -579,12 +628,16 @@ class CorrectionPage(ModelWithSerializeOption) :
     def __str__(self) :
         return ' ' + str(str(self.correction) + 'page nombre ' + str(self.number))
 
- 
 # only administration can add and change thise tables
-class Subject(ModelWithSerializeOption) :
- 
+class Subject(ModelWithSerializeOption) : 
     title = models.CharField(max_length=50) 
     image = ResizedImageField(size=[64,46],upload_to='subject_images/', null=False, blank=False) 
+    levels =   models.ManyToManyField(
+        'Level',
+        related_name = 'level_subjects',
+        null=False,
+        blank=False
+    )
     def progress_subject(self,user) :  
         try :
            progress =   int((     (len(user.completed_videos.all()) + len(user.completed_series.all()))  * 100)/ (len(Video.objects.filter(course__chapiter__subject = self)) + len(Serie.objects.filter(course__chapiter__subject = self)))    )
@@ -600,6 +653,12 @@ class Level(ModelWithSerializeOption) :
         unique  = True,
     )
     image = models.ImageField(upload_to='subject_images/', null=False, blank=False)     
+    subjects = models.ManyToManyField(
+        Subject,
+        related_name = 'subjects',
+        null=True,
+        blank=True
+    )
     def __str__(self):
         return self.title
 
@@ -687,6 +746,12 @@ class GetOffer(ModelWithSerializeOption):
                 raise ValueError("you can not get this offer you are alredy have a one")
         super(GetOffer, self).save(*args, **kwargs)
  
+
+# to ensure that each chapiter is related to its subject
+def validate_chapiter_levels_is_in_its_subject_levels(level) : 
+    pass # you have to use this function in Chapiter save method 
+
+
 class Chapiter(ModelWithSerializeOption):
     title = models.CharField(
         unique=True,
@@ -710,6 +775,13 @@ class Chapiter(ModelWithSerializeOption):
         db_comment="Chapiter subject",
         error_messages={'blank': 'Please select a subject.'}
     )
+    levels =   models.ManyToManyField(
+        Level,
+        related_name = 'chapiter_levels',
+        null=False,
+         
+        blank=False
+    )
 
     def progress_chapiter(self,user) :  
         try : 
@@ -717,17 +789,12 @@ class Chapiter(ModelWithSerializeOption):
         except : 
             progress = 0 
         return progress
+    
     def __str__(self) -> str:
         return self.title
  
-
-
-
-
-
-
 ##### soon ##########
-
+    
 class Group (ModelWithSerializeOption) :
     professor =  models.ForeignKey('Professor',on_delete = models.PROTECT)  
     title = models.CharField(
