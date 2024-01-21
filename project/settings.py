@@ -75,7 +75,6 @@ CORS_ALLOWED_ORIGINS = [
     'http://192.168.1.111:3000',  
 
     'https://educa-nine.vercel.app',
-  
 
     'https://educa-front-ochre.vercel.app',
    
