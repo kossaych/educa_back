@@ -27,18 +27,16 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     '192.168.1.111',
-    '192.168.1.111:3000', 
+    '192.168.1.111:3000',  
+
+
+    'educa-back.vercel.app/',
+    'educa-back.vercel.app',
+
 
 
     '.vercel.app',
-    'educa-nine.vercel.app',
-    'https://educa-nine.vercel.app/',
-    'https://educa-front-ochre.vercel.app',
-    'https://educa-front-ochre.vercel.app/',
-    'educa-front-ochre.vercel.app',
-
-
-
+ 
     '.now.sh',
     ]
 
@@ -77,6 +75,9 @@ CORS_ALLOWED_ORIGINS = [
     'https://educa-nine.vercel.app',
 
     'https://educa-front-ochre.vercel.app',
+
+
+    'https://educa-back.vercel.app',
    
   
 ]
