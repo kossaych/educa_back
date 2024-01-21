@@ -122,7 +122,7 @@ DATABASES = {
 } """
 
 
-""" DATABASES = {
+DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'railway',
@@ -131,11 +131,11 @@ DATABASES = {
         'HOST': 'viaduct.proxy.rlwy.net',
         'PORT': '37618',
     }
-} """
+}
 
 
 
-DATABASES = {
+""" DATABASES = {
 'default': {
 'ENGINE': 'django.db.backends.mysql',
 'NAME': 'educadb',
@@ -144,7 +144,7 @@ DATABASES = {
 'HOST':'localhost',
 'PORT':'3306',
 }}
-
+ """
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
