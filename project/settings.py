@@ -75,10 +75,10 @@ CORS_ALLOWED_ORIGINS = [
     'http://192.168.1.111:3000',  
 
     'https://educa-nine.vercel.app',
-    'https://educa-nine.vercel.app/',
+  
 
     'https://educa-front-ochre.vercel.app',
-    'https://educa-front-ochre.vercel.app/',
+   
   
 ]
 
@@ -113,16 +113,16 @@ WSGI_APPLICATION = 'project.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
-""" 
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
-} """
+}
 
 
-DATABASES = {
+""" DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'railway',
@@ -131,9 +131,7 @@ DATABASES = {
         'HOST': 'viaduct.proxy.rlwy.net',
         'PORT': '37618',
     }
-}
-
-
+} """
 
 """ DATABASES = {
 'default': {
