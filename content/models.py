@@ -170,7 +170,18 @@ def upload_to(instance,filename):
 def upload_videos(instance,filename):
     extention = filename.split('.')[-1]
     filename = str(uuid.uuid4())+"."+(extention)
-    instance.url =  'http://192.168.1.111:8000/media' +'/'.join([str(instance.course.title+'/'+instance.type),filename])
+
+    try : 
+        os.mkdir(os.path.join(settings.MEDIA_ROOT,str(instance.course.title),))
+    except :
+        pass
+
+    try : 
+        os.mkdir(os.path.join(settings.MEDIA_ROOT,str(instance.course.title),instance.type))
+    except :
+        pass
+ 
+    instance.url =  'https://educa-back.vercel.app/media' +'/'.join([str(instance.course.title+'/'+instance.type),filename])
 
     return '/'.join([str(instance.course.title+'/'+instance.type),filename])
 
@@ -428,7 +439,7 @@ class Video(ModelWithSerializeOption):
         return self.title
     def save(self, *args, **kwargs) :
         if str(self.video) not in ['','1']:
-            self.url =  'http://192.168.1.111:8000/media/' + str(self.video)
+            self.url =  'https://educa-back.vercel.app/media/' + str(self.video)
         super(Video, self).save(*args, **kwargs)
     class Meta() :
         unique_together = [["title", "course"]]
