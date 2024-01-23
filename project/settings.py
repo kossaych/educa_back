@@ -25,20 +25,7 @@ SECRET_KEY = 'django-insecure--uw560b&8i8_w3xyp36mvuanam-nnbst!9wbdko*#$hmt2ta+a
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [
-    '192.168.1.111',
-    '192.168.1.111:3000',  
-
-
-    'educa-back.vercel.app/',
-    'educa-back.vercel.app',
-
-
-
-    '.vercel.app',
- 
-    '.now.sh',
-    ]
+ALLOWED_HOSTS = ['192.168.1.111','192.168.1.111:3000','educa-git-main-kossays-projects.vercel.app' ,'.vercel.app','educa-nine.vercel.app','educa-liart.vercel.app','.now.sh']
 
 # Application definition
 
@@ -70,16 +57,14 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
   #  'http://127.0.0.1:3000',
-    'http://192.168.1.111:3000',  
-
+    'http://192.168.1.111:3000',
     'https://educa-nine.vercel.app',
-
-    'https://educa-front-ochre.vercel.app',
-
-
-    'https://educa-back.vercel.app',
-   
-  
+    "https://educa-nine.vercel.app",
+   'https://educa-git-main-kossays-projects.vercel.app',
+ 
+    #'https://educa-liart.vercel.app',
+   # 'https://educa-liart.vercel.app/'
+    
 ]
 
 
@@ -113,27 +98,29 @@ WSGI_APPLICATION = 'project.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
-
+""" 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
+} """
+
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'verceldb',
+        'USER': 'default',
+        'PASSWORD': 'G9fHmxoJBD7p',
+        'HOST': 'ep-green-heart-80631740-pooler.eu-central-1.postgres.vercel-storage.com',
+        'PORT': '5432',
+    }
 }
 
 
-""" DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'railway',
-        'USER': 'postgres',
-        'PASSWORD': 'aecDFad3cGEBE6cD3fb*GDf1aFF5444F',
-        'HOST': 'viaduct.proxy.rlwy.net',
-        'PORT': '37618',
-    }
-} """
 
-""" DATABASES = {
+"""DATABASES = {
 'default': {
 'ENGINE': 'django.db.backends.mysql',
 'NAME': 'educadb',
@@ -141,8 +128,8 @@ DATABASES = {
 'PASSWORD': '',
 'HOST':'localhost',
 'PORT':'3306',
-}}
- """
+}}"""
+
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
