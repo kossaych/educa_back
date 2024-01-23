@@ -411,7 +411,7 @@ class Video(ModelWithSerializeOption):
         blank=True
     )
     type = models.CharField(choices = [('exercice','exercice'),('course','course')],max_length = 100,null=False,blank=False)
-    video = models.FileField(upload_to= upload_videos,null=False,blank=False)
+    video = models.FileField()#upload_to= upload_videos )
     attachment = models.FileField(blank=False,null=False) 
     status = models.CharField(choices = (('published','published'),('unpublished','unpublished')),max_length = 20)
     is_free = models.BooleanField(default = False)
@@ -562,7 +562,6 @@ class Serie(ModelWithSerializeOption) :
             except :
                 pass
             image_path = os.path.join(settings.MEDIA_ROOT,'series_images',str(self.title), str(image_name))
-            print(image_path,'///////////*****************-+++++++++++++32589+')
             pix.save(image_path)
             SeriePage.objects.create(serie = self,content = image_path,number = page_num + 1)
 
