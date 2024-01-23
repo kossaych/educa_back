@@ -181,9 +181,9 @@ def upload_videos(instance,filename):
     except :
         pass
  
-    instance.url =  'https://educa-back.vercel.app/media' +'/'.join([str(instance.course.title+'/'+instance.type),filename])
+    instance.url =  os.path.join(settings.MEDIA_ROOT,str(instance.course.title),str(instance.type),str(filename))
 
-    return '/'.join([str(instance.course.title+'/'+instance.type),filename])
+    return  os.path.join(str(instance.course.title),str(instance.type),str(filename))
 
 
  
