@@ -306,8 +306,8 @@ class BaseUser(AbstractUser,ModelWithSerializeOption) :
             email = EmailMessage(label,str(messege), to=[self.email])
             try :
                 email.send()
-            except Exception as e:
-                return (str(e) +  '*****'+'sending email to the user' +str(self.username)+'  failed please try again ! ')
+            except Exception as e :
+                raise (e)
 
 class Professor(ModelWithSerializeOption) :
  
