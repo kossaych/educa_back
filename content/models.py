@@ -373,6 +373,8 @@ class Course(ModelWithSerializeOption) :
     )
     class Meta() :
         unique_together = [["title", "chapiter"]]
+    def __str__(self) :
+        return str(self.title) + ' made by ' + str(self.teacher)
 
 
 # to ensure that each video is related to its course
@@ -411,8 +413,8 @@ class Video(ModelWithSerializeOption):
         blank=True
     )
     type = models.CharField(choices = [('exercice','exercice'),('course','course')],max_length = 100,null=False,blank=False)
-    video = models.FileField()#upload_to= upload_videos )
-    attachment = models.FileField(blank=False,null=False) 
+    video = models.FileField(blank=True ,upload_to= upload_videos )
+    attachment = models.FileField(blank=True,null=True) 
     status = models.CharField(choices = (('published','published'),('unpublished','unpublished')),max_length = 20)
     is_free = models.BooleanField(default = False)
     # people with these levels can see this video

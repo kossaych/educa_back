@@ -16,6 +16,9 @@ from django.conf import settings
 from django.http import FileResponse
 import os
 
+
+
+ 
 def get_video(request, video_name):
     video_path = os.path.join(settings.MEDIA_ROOT, 'videos', video_name)
     return FileResponse(open(video_path, 'rb'), content_type='video/mp4')
@@ -353,12 +356,6 @@ class SetPassword(APIView):
             import time
             time.sleep(1)
             return Response("invalid code",status = status.HTTP_400_BAD_REQUEST) 
- 
-
-
-
-
-
 
 class ChangePassword(APIView) :
     authentication_classes = [TokenAuthentication]
@@ -382,11 +379,6 @@ class ChangePassword(APIView) :
             import time
             time.sleep(1)
             return Response('current password uncorrect',status.HTTP_400_BAD_REQUEST)                           
-
-
-
-
-
 
 class GetLevelsAPI(APIView) : 
     def get(self,request) :
@@ -532,7 +524,6 @@ class GetTeacherDesiplineChapitersAPI(APIView) :
        
         return Response(chapiters,status=status.HTTP_200_OK)
 
-
 class Create_Course(APIView) : 
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -577,6 +568,7 @@ class CourseAPI(APIView) :
                 return Response(str(e.messages[0]) , status = status.HTTP_400_BAD_REQUEST)
             
         else : return Response('ou are not allowed to create a course you must be a teacher')
+
 class CoursePkAPI(APIView) : 
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -633,7 +625,6 @@ class CoursePkAPI(APIView) :
             
         else : return Response('ou are not allowed to create a course you must be a teacher')
 
-
 class VideoAPI(APIView) : 
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -647,16 +638,13 @@ class VideoAPI(APIView) :
             video = request.data['file']
             attachment = request.data.get('attachment')
             video_status = request.data.get('status')
+  
             if title == '' :
-                return Response('écrire le titre du video',status=status.HTTP_400_BAD_REQUEST)
-
-
-            if attachment == ''  :
-                return Response('select an attachment',status=status.HTTP_400_BAD_REQUEST)
+                return Response('écrire le titre du video',status=status.HTTP_400_BAD_REQUEST) 
             
-
-
-
+            if attachment == ''  :
+                return Response('select an attachment',status=status.HTTP_400_BAD_REQUEST) 
+            
             if url[:6] == '<iframe>'[:6] :
                  url = (url[url.find('https'):url.find('" title="')]).strip()
 
@@ -670,12 +658,6 @@ class VideoAPI(APIView) :
             
             if url[:len("https://youtu.be/")] == "https://youtu.be/" :
                 url = "https://www.youtube.com/embed/" + url[url.find('/',15) + 1 : url.find('?')]
-
-
-
-
-
-
 
             if Video.objects.filter(url = url) : 
                 print(url)
