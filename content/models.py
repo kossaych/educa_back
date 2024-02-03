@@ -22,10 +22,9 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 
 
-import fitz   
+# fitz   
 
-from django.conf import settings 
-from django.http import FileResponse
+from django.conf import settings  
 import os
 
 
@@ -166,27 +165,32 @@ def upload_to(instance,filename):
     filename = str(uuid.uuid4())+"."+(extention)
     return '/'.join([str(instance.first_name+instance.last_name),filename])
 
-
 def upload_videos(instance,filename):
     extention = filename.split('.')[-1]
     filename = str(uuid.uuid4())+"."+(extention)
+    
 
     try : 
-        os.mkdir(os.path.join(settings.MEDIA_ROOT,str(instance.course.title),))
-    except :
+        os.mkdir('/'.join([str(settings.BASE_DIR)+'/media',str(instance.course.title)])) 
+    except FileExistsError :
         pass
-
     try : 
-        os.mkdir(os.path.join(settings.MEDIA_ROOT,str(instance.course.title),instance.type))
-    except :
+        os.mkdir('/'.join([str(settings.BASE_DIR)+'/media',str(instance.course.title)]))
+        os.mkdir('/'.join([str(settings.BASE_DIR)+'/media',str(instance.course.title),str(instance.type)])) 
+    except FileExistsError :
         pass
- 
-    instance.url =  os.path.join(settings.MEDIA_ROOT,str(instance.course.title),str(instance.type),str(filename))
+    try : 
+        os.mkdir('/'.join([str(settings.BASE_DIR)+'/media',str(instance.course.title)]))
+        os.mkdir('/'.join([str(settings.BASE_DIR)+'/media',str(instance.course.title),str(instance.type)]))
+        os.mkdir('/'.join([str(settings.BASE_DIR)+'/media',str(instance.course.title),str(instance.type),'video'])) 
+    except FileExistsError :
+        pass
+    
 
-    return  os.path.join(str(instance.course.title),str(instance.type),str(filename))
 
 
- 
+    return '/'.join([str(instance.course.title),str(instance.type),'video',str(filename)]) 
+
 class CodeVerification(models.Model):
     user = models.ForeignKey('BaseUser',editable=False, on_delete=models.CASCADE,primary_key  = True)
     code = models.CharField(
@@ -413,7 +417,7 @@ class Video(ModelWithSerializeOption):
         blank=True
     )
     type = models.CharField(choices = [('exercice','exercice'),('course','course')],max_length = 100,null=False,blank=False)
-    video = models.FileField(blank=True ,upload_to= upload_videos )
+    video = models.FileField(blank=True ,upload_to= upload_videos)
     attachment = models.FileField(blank=True,null=True) 
     status = models.CharField(choices = (('published','published'),('unpublished','unpublished')),max_length = 20)
     is_free = models.BooleanField(default = False)
@@ -441,7 +445,7 @@ class Video(ModelWithSerializeOption):
         return self.title
     def save(self, *args, **kwargs) :
         if str(self.video) not in ['','1']:
-            self.url =  'https://educa-back.vercel.app/media/' + str(self.video)
+            self.url =  'http://192.168.1.111:8000/media/' + str(self.video)
         super(Video, self).save(*args, **kwargs)
     class Meta() :
         unique_together = [["title", "course"]]
@@ -467,7 +471,7 @@ class Summary(ModelWithSerializeOption):
     created_at = models.DateTimeField(
         auto_now_add=True
     )
-     
+    """   
     def create_file_pages(self,image_format='png'):
         pages = []
         # Open the PDF file
@@ -497,11 +501,11 @@ class Summary(ModelWithSerializeOption):
         
         # Close the PDF document
         pdf_document.close() 
-
+    """
     def save(self, *args, **kwargs) :
         super(Summary, self).save(*args, **kwargs)
  
-        self.create_file_pages()
+        #self.create_file_pages()
  
     def __str__(self):
         return self.title
@@ -538,7 +542,7 @@ class Serie(ModelWithSerializeOption) :
         blank=True
     )
     file = models.FileField(upload_to='pdf_files')
- 
+    """ 
     def create_file_pages(self,image_format='png'):
         pages = []
         # Open the PDF file
@@ -572,14 +576,14 @@ class Serie(ModelWithSerializeOption) :
         # Close the PDF document
         pdf_document.close() 
          
-
+    """
     def completed(self,user) :
         return user in self.students_complete_content.all()
     
     def save(self, *args, **kwargs) :
         super(Serie, self).save(*args, **kwargs)
 
-        self.create_file_pages()
+        #self.create_file_pages()
 
     def __str__(self) :
         return 'chapitre ' + str(self.course) + ' : ' + str(self.title)
@@ -599,7 +603,7 @@ class Correction(ModelWithSerializeOption):
         on_delete=models.CASCADE, 
     )
     file = models.FileField(upload_to='pdf_files')
- 
+    """ 
     def create_file_pages(self,image_format='png'):
         pages = []
         # Open the PDF file
@@ -628,10 +632,10 @@ class Correction(ModelWithSerializeOption):
         # Close the PDF document
         pdf_document.close() 
          
-  
+    """
     def save(self, *args, **kwargs) :
         super(Correction, self).save(*args, **kwargs)
-        self.create_file_pages()
+        #   self.create_file_pages()
  
 class CorrectionPage(ModelWithSerializeOption) :
     correction = models.ForeignKey('Correction',on_delete = models.PROTECT)

@@ -642,9 +642,9 @@ class VideoAPI(APIView) :
             if title == '' :
                 return Response('écrire le titre du video',status=status.HTTP_400_BAD_REQUEST) 
             
-            if attachment == ''  :
+            """ if attachment == ''  :
                 return Response('select an attachment',status=status.HTTP_400_BAD_REQUEST) 
-            
+             """
             if url[:6] == '<iframe>'[:6] :
                  url = (url[url.find('https'):url.find('" title="')]).strip()
 
@@ -678,6 +678,7 @@ class VideoAPI(APIView) :
                 return Response(status=status.HTTP_200_OK)
 
             except Exception as e :
+                raise e
                 return Response(str(e),status=status.HTTP_400_BAD_REQUEST)
         
              
