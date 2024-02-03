@@ -780,13 +780,13 @@ class Chapiter(ModelWithSerializeOption):
         db_index=True,
         null=False,
         blank=False,
-        db_comment="Chapiter description",
+        #db_comment="Chapiter description",
         error_messages={'blank': 'The description cannot be left blank.'}
     )
     subject = models.ForeignKey(
         'Subject',
         on_delete=models.PROTECT,
-        db_comment="Chapiter subject",
+        #db_comment="Chapiter subject",
         error_messages={'blank': 'Please select a subject.'}
     )
     levels =   models.ManyToManyField(
@@ -834,14 +834,14 @@ class Comment(ModelWithSerializeOption):
 
  
     content = models.TextField(
-        db_comment="Comment content",
+        #db_comment="Comment content",
         null=False,
         blank=False,
     )
     author = models.ForeignKey(
         BaseUser,
         on_delete=models.CASCADE,
-        db_comment="Comment author"
+        #db_comment="Comment author"
     )
     created_at = models.DateTimeField(
         auto_now_add=True,
