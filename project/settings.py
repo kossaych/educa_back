@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure--uw560b&8i8_w3xyp36mvuanam-nnbst!9wbdko*#$hmt2ta+a
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.1.111','192.168.1.111:3000','educa-git-main-kossays-projects.vercel.app' ,'.vercel.app','educa-nine.vercel.app','educa-liart.vercel.app','.now.sh']
+ALLOWED_HOSTS = ['kossay.pythonanywhere.com','192.168.1.111','192.168.1.111:3000','educa-git-main-kossays-projects.vercel.app' ,'.vercel.app','educa-nine.vercel.app','educa-liart.vercel.app','.now.sh']
 
 # Application definition
 
@@ -56,6 +56,7 @@ MIDDLEWARE = [
 
 
 CORS_ALLOWED_ORIGINS = [
+    'https://kossay.pythonanywhere.com',
   #  'http://127.0.0.1:3000',
     'http://192.168.1.111:3000',
     'https://educa-nine.vercel.app',
