@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from django.core.exceptions import ValidationError
 from django.db import models
  
@@ -301,9 +302,10 @@ class BaseUser(AbstractUser,ModelWithSerializeOption) :
     image_cover = models.ImageField(upload_to = upload_to ,blank=True,default='default_user_cover.jpg')
     image_profile = models.ImageField(upload_to = upload_to,blank=True,default='default_user_profile.jpg')
   
-    username = None
+    #username = None
     REQUIRED_FIELDS = ['role','first_name','last_name','password']
-    USERNAME_FIELD = 'email'
+    #USERNAME_FIELD = 'email'
+    
     def has_module_perms(self, app_label):
         return self.is_superuser
     def has_perm(self, perm, obj=None):
