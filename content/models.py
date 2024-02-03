@@ -447,7 +447,7 @@ class Video(ModelWithSerializeOption):
         return self.title
     def save(self, *args, **kwargs) :
         if str(self.video) not in ['','1']:
-            self.url =  'http://192.168.1.111:8000/media/' + str(self.video)
+            self.url =  'https://kossay.pythonanywhere.com/media/' + str(self.video)
         super(Video, self).save(*args, **kwargs)
     class Meta() :
         unique_together = [["title", "course"]]
