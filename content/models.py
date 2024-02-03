@@ -771,11 +771,9 @@ def validate_chapiter_levels_is_in_its_subject_levels(level) :
 class Chapiter(ModelWithSerializeOption):
     title = models.CharField(
         unique=True,
-        max_length=200,
-        db_index=True,
+        max_length=200, 
         null=False,
-        blank=False,
-        db_comment="Chapiter title",
+        blank=False, 
         error_messages={'blank': 'The title cannot be left blank.','null': 'The title cannot be null.'}
     )
     description = models.TextField(
