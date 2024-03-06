@@ -18,12 +18,14 @@ from django.contrib.auth.models import AbstractUser
 from django.core.mail import EmailMessage
 from django_resized import ResizedImageField
 
+import os
+
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 
 
-# fitz   
+import  fitz   
 
 from django.conf import settings  
 import os
@@ -161,36 +163,75 @@ def validate_alpha(value) :
      if not(value.isalpha()) :
         raise ValueError('first and last name should contain only letters')
 
-def upload_to(instance,filename):
+
+# to ensure that each video is related to its course
+def validate_chapiter_levels_is_in_its_subject_levels(level) : 
+    level = Level.objects.get(id = level,)
+ 
+
+
+
+##################### upload to functions #############################""
+def upload_user_image_to(instance,filename):
     extention = filename.split('.')[-1]
     filename = str(uuid.uuid4())+"."+(extention)
     return '/'.join([str(instance.first_name+instance.last_name),filename])
 
-def upload_videos(instance,filename):
+def upload_videos_to(instance,filename):
     extention = filename.split('.')[-1]
-    filename = str(uuid.uuid4())+"."+(extention)
+    filename = str(uuid.uuid4())+"."+(extention) 
     
+    try : 
+        os.mkdir('\\'.join([str(settings.BASE_DIR),'media',str(instance.course.id)])) 
+    except FileExistsError : 
+        try : 
+            os.mkdir('\\'.join([str(settings.BASE_DIR),'media',str(instance.course.id),instance.type])) 
+        except FileExistsError : 
+            try :    
+                os.mkdir('\\'.join([str(settings.BASE_DIR),'media',str(instance.course.id),instance.type,'video'])) 
+            except FileExistsError : 
+                pass
 
-    try : 
-        os.mkdir('/'.join([str(settings.BASE_DIR)+'/media',str(instance.course.title)])) 
-    except FileExistsError :
-        pass
-    try : 
-        os.mkdir('/'.join([str(settings.BASE_DIR)+'/media',str(instance.course.title)]))
-        os.mkdir('/'.join([str(settings.BASE_DIR)+'/media',str(instance.course.title),str(instance.type)])) 
-    except FileExistsError :
-        pass
-    try : 
-        os.mkdir('/'.join([str(settings.BASE_DIR)+'/media',str(instance.course.title)]))
-        os.mkdir('/'.join([str(settings.BASE_DIR)+'/media',str(instance.course.title),str(instance.type)]))
-        os.mkdir('/'.join([str(settings.BASE_DIR)+'/media',str(instance.course.title),str(instance.type),'video'])) 
-    except FileExistsError :
-        pass
+    return '/'.join([str(instance.course.id),instance.type,'video',str(filename)]) 
+
+
+def upload_attachment_to(instance,filename):
+    extention = filename.split('.')[-1]
+    filename = str(uuid.uuid4())+"."+(extention) 
     
+    try : 
+        os.mkdir('\\'.join([str(settings.BASE_DIR),'media',str(instance.course.id)])) 
+    except FileExistsError : 
+        try : 
+            os.mkdir('\\'.join([str(settings.BASE_DIR),'media',str(instance.course.id),instance.type])) 
+        except FileExistsError : 
+            try :    
+                os.mkdir('\\'.join([str(settings.BASE_DIR),'media',str(instance.course.id),instance.type,'attachment'])) 
+            except FileExistsError : 
+                pass
+
+    return '/'.join([str(instance.course.id),instance.type,'attachment',str(filename)]) 
+
+def upload_document_to(instance,filename):
+    extention = filename.split('.')[-1]
+    filename = str(uuid.uuid4())+"."+(extention) 
+    
+    try : 
+        os.mkdir('\\'.join([str(settings.BASE_DIR),'media',str(instance.course.id)])) 
+    except FileExistsError : 
+        try : 
+            os.mkdir('\\'.join([str(settings.BASE_DIR),'media',str(instance.course.id),instance.type])) 
+        except FileExistsError : 
+            try :    
+                os.mkdir('\\'.join([str(settings.BASE_DIR),'media',str(instance.course.id),instance.type,'serie'])) 
+            except FileExistsError : 
+                pass
+
+    return '/'.join([str(instance.course.id),instance.type,'serie',str(filename)]) 
 
 
+ 
 
-    return '/'.join([str(instance.course.title),str(instance.type),'video',str(filename)]) 
 
 class CodeVerification(models.Model):
     user = models.ForeignKey('BaseUser',editable=False, on_delete=models.CASCADE,primary_key  = True)
@@ -299,8 +340,8 @@ class BaseUser(AbstractUser,ModelWithSerializeOption) :
                                     }
                            ) 
     date_of_birth = models.DateField(null=True, blank=True)
-    image_cover = models.ImageField(upload_to = upload_to ,blank=True,default='default_user_cover.jpg')
-    image_profile = models.ImageField(upload_to = upload_to,blank=True,default='default_user_profile.jpg')
+    image_cover = models.ImageField(upload_to = upload_user_image_to ,blank=True,default='default_user_cover.jpg')
+    image_profile = models.ImageField(upload_to = upload_user_image_to,blank=True,default='default_user_profile.jpg')
   
     username = None
     REQUIRED_FIELDS = ['role','first_name','last_name','password']
@@ -350,6 +391,7 @@ class Student(ModelWithSerializeOption) :
         on_delete = models.PROTECT
         )
 
+
 class Course(ModelWithSerializeOption) :
     title = models.CharField(
         null=False,
@@ -382,13 +424,6 @@ class Course(ModelWithSerializeOption) :
     def __str__(self) :
         return str(self.title) + ' made by ' + str(self.teacher)
 
-
-# to ensure that each video is related to its course
-def validate_chapiter_levels_is_in_its_subject_levels(level) : 
-    level = Level.objects.get(id = level,)
- 
-
-
 class Video(ModelWithSerializeOption):
     title = models.CharField( 
         max_length=100,  
@@ -419,8 +454,8 @@ class Video(ModelWithSerializeOption):
         blank=True
     )
     type = models.CharField(choices = [('exercice','exercice'),('course','course')],max_length = 100,null=False,blank=False)
-    video = models.FileField(blank=True ,upload_to= upload_videos)
-    attachment = models.FileField(blank=True,null=True) 
+    video = models.FileField(blank=True ,upload_to= upload_videos_to)
+    attachment = models.FileField(blank=True,null=True,upload_to= upload_attachment_to) 
     status = models.CharField(choices = (('published','published'),('unpublished','unpublished')),max_length = 20)
     is_free = models.BooleanField(default = False)
     # people with these levels can see this video
@@ -447,85 +482,31 @@ class Video(ModelWithSerializeOption):
         return self.title
     def save(self, *args, **kwargs) :
         if str(self.video) not in ['','1']:
-            self.url =  'https://kossay.pythonanywhere.com/media/' + str(self.video)
+            self.url = str(settings.HOST) + str(settings.MEDIA_URL) + str(self.video)
         super(Video, self).save(*args, **kwargs)
+    def delete(self): 
+        
+        if self.video and os.path.isfile(self.video.path) : 
+            print( str(self.video.path))
+            os.remove(str(self.video.path))
+        if self.attachment and os.path.isfile(self.attachment.path) : 
+            print( str(self.attachment.path))
+            os.remove(str(self.attachment.path))
+        
+        super(Video, self).delete()
+        
+    
     class Meta() :
         unique_together = [["title", "course"]]
 
-class Summary(ModelWithSerializeOption): 
-
-    title = models.CharField(
-        null=False,
-        blank=False,
-        max_length=100,    
-    )
-    
-    file = models.FileField()
-     
-    course  = models.ForeignKey(
-        'Course',
-        null=False,
-        blank=False,
-        on_delete=models.CASCADE, 
-      
-    )
-    
-    created_at = models.DateTimeField(
-        auto_now_add=True
-    )
-    """   
-    def create_file_pages(self,image_format='png'):
-        pages = []
-        # Open the PDF file
-        pdf_path = os.path.join(settings.MEDIA_ROOT, str(self.file))
-        pdf_document = fitz.open(pdf_path)
-
-        # Iterate through each page
-        for page_num in range(pdf_document.page_count) :
-            # Get the page
-            page = pdf_document.load_page(page_num) 
-            # Convert the page to an image
-            pix = page.get_pixmap(alpha=False)
- 
-            
-            # Save the image
-            image_name = f'page_{page_num + 1}.{image_format}'
-            try : 
-                os.mkdir(os.path.join(settings.MEDIA_ROOT,'summaries_images',str(self.title)))
-            except :
-                pass
-            image_path = os.path.join(settings.MEDIA_ROOT,'summaries_images',str(self.title), str(image_name))
-
-            pix.save(image_path)
-            SummaryPage.objects.create(summary = self,content = image_path,number = page_num + 1)
-
-            pages.append({'content' : image_path})
-        
-        # Close the PDF document
-        pdf_document.close() 
-    """
-    def save(self, *args, **kwargs) :
-        super(Summary, self).save(*args, **kwargs)
- 
-        #self.create_file_pages()
- 
-    def __str__(self):
-        return self.title
- 
-class SummaryPage(ModelWithSerializeOption) :
-    summary = models.ForeignKey('Summary',on_delete = models.PROTECT)
-    content = models.ImageField(blank=False,null=False) 
-    number = models.IntegerField(null = False,blank=  False) 
-    def __str__(self) :
-        return ' ' + str(str(self.summary) + 'page nombre ' + str(self.number))
-
-class Serie(ModelWithSerializeOption) : 
+class ContentDocument(ModelWithSerializeOption) :
     title = models.CharField(
         null=False,
         blank=False,
         max_length=100, 
         unique = True
     )
+    
     course  = models.ForeignKey(
         'Course',
         null=False,
@@ -533,9 +514,11 @@ class Serie(ModelWithSerializeOption) :
         on_delete=models.CASCADE, 
       
     )
+    
     created_at = models.DateTimeField(
         auto_now_add=True
     )
+    
     students_complete_content = models.ManyToManyField(
         BaseUser, 
         limit_choices_to= {'role' : 'student'},
@@ -543,9 +526,12 @@ class Serie(ModelWithSerializeOption) :
         null=True,
         blank=True
     )
-    file = models.FileField(upload_to='pdf_files')
-    """ 
-    def create_file_pages(self,image_format='png'):
+ 
+    type = models.CharField(choices = [('serie','serie'),('summary','summary')],max_length = 100,null=False,blank=False)
+ 
+    file = models.FileField(upload_to= upload_document_to)
+ 
+    def file_pages(self,image_format='png'):
         pages = []
         # Open the PDF file
         pdf_path = os.path.join(settings.MEDIA_ROOT, str(self.file))
@@ -562,89 +548,29 @@ class Serie(ModelWithSerializeOption) :
             # Save the image
             image_name = f'page_{page_num + 1}.{image_format}'
             try : 
-                os.mkdir(os.path.join(settings.MEDIA_ROOT,'series_images'))
+                os.mkdir(os.path.join(settings.MEDIA_ROOT,'ducument_images'))
             except :
                 pass
             try : 
-                os.mkdir(os.path.join(settings.MEDIA_ROOT,'series_images',str(self.title)))
+                os.mkdir(os.path.join(settings.MEDIA_ROOT,'document_images',str(self.id)))
             except :
                 pass
-            image_path = os.path.join(settings.MEDIA_ROOT,'series_images',str(self.title), str(image_name))
+            image_path = os.path.join(settings.MEDIA_ROOT,'series_images',str(self.id), str(image_name))
             pix.save(image_path)
-            SeriePage.objects.create(serie = self,content = image_path,number = page_num + 1)
-
+ 
             pages.append({'content' : image_path})
         
         # Close the PDF document
         pdf_document.close() 
+        return   pages
          
-    """
     def completed(self,user) :
-        return user in self.students_complete_content.all()
-    
+        return user in self.students_complete_content.all() 
     def save(self, *args, **kwargs) :
-        super(Serie, self).save(*args, **kwargs)
-
-        #self.create_file_pages()
-
+        super(ContentDocument, self).save(*args, **kwargs) 
+        #self.create_file_pages() 
     def __str__(self) :
         return 'chapitre ' + str(self.course) + ' : ' + str(self.title)
-
-class SeriePage(ModelWithSerializeOption) :
-    serie = models.ForeignKey('Serie',on_delete = models.PROTECT)
-    content = models.ImageField(blank=False,null=False) 
-    number = models.IntegerField(null = False,blank=  False) 
-    def __str__(self) :
-        return ' ' + str(str(self.serie) + 'page nombre ' + str(self.number))
-
-class Correction(ModelWithSerializeOption):
-    serie = models.ForeignKey(
-        'Serie',
-        null=False,
-        blank=False,
-        on_delete=models.CASCADE, 
-    )
-    file = models.FileField(upload_to='pdf_files')
-    """ 
-    def create_file_pages(self,image_format='png'):
-        pages = []
-        # Open the PDF file
-        pdf_path = os.path.join(settings.MEDIA_ROOT, str(self.file))
-        pdf_document = fitz.open(pdf_path)
-
-        # Iterate through each page
-        for page_num in range(pdf_document.page_count) :
-            # Get the page
-            page = pdf_document.load_page(page_num) 
-            # Convert the page to an image
-            pix = page.get_pixmap(alpha=False)
- 
-            
-            # Save the image
-            image_name = f'page_{page_num + 1}.{image_format}'
-            
-             
-            image_path = os.path.join(settings.MEDIA_ROOT,'series_images',str(self.serie.title),'correction'+'_'+str(image_name))
-
-            pix.save(image_path)
-            CorrectionPage.objects.create(correction = self,content = image_path,number = page_num + 1)
-
-            pages.append({'content' : image_path})
-        
-        # Close the PDF document
-        pdf_document.close() 
-         
-    """
-    def save(self, *args, **kwargs) :
-        super(Correction, self).save(*args, **kwargs)
-        #   self.create_file_pages()
- 
-class CorrectionPage(ModelWithSerializeOption) :
-    correction = models.ForeignKey('Correction',on_delete = models.PROTECT)
-    content = models.ImageField(blank=False,null=False) 
-    number = models.IntegerField(null = False,blank=  False) 
-    def __str__(self) :
-        return ' ' + str(str(self.correction) + 'page nombre ' + str(self.number))
 
 # only administration can add and change thise tables
 class Subject(ModelWithSerializeOption) : 
@@ -794,8 +720,7 @@ class Chapiter(ModelWithSerializeOption):
     levels =   models.ManyToManyField(
         Level,
         related_name = 'chapiter_levels',
-        null=False,
-         
+        null=False, 
         blank=False
     )
 

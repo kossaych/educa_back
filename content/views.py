@@ -389,6 +389,7 @@ class GetLevelsAPI(APIView) :
 class GetDesiplinesAPI(APIView) :
     def get(self,request) :
         data = Subject.objects.all()
+       
         serialised_data = Serializer(
             data,
             id = Field('id'),
@@ -405,8 +406,9 @@ class GetSubjectsAPI(APIView) :
         try : 
             student = Student.objects.get(user = request.user)
             subjects = student.level.subjects.all().serialize()
-        except : 
-            subjects  = []
+        except Exception as e : 
+            raise e
+            #subjects  = []
         return Response(subjects,status=status.HTTP_200_OK)
 
 class GetTeacherCoursesAPI(APIView) :
@@ -449,9 +451,7 @@ class ChapiterPkAPI(APIView) :
            user_level = Student.objects.get(user = user).level
         except : 
             user_level = ""
-        print(user_level,'*******'*100)
-        data = Chapiter.objects.get(id = id).serialize(    
-
+        data = Chapiter.objects.get(id = id).serialize(     
             id = Field('id'),
             title = Field('title'),   
             courses = RelationField('chapiter',Course).set_fields( 
@@ -480,25 +480,20 @@ class ChapiterPkAPI(APIView) :
                         attachment = Field('attachment') 
                     ).set_filters(type = 'exercice',status = 'published',levels__title__in = [user_level]),
                 
-                series = RelationField('course',Serie).set_fields(
+                series = RelationField('course',ContentDocument).set_fields(
                         title = Field('title'),
                         created_at  = Field('created_at'), 
-                        pages = RelationField('serie',SeriePage).set_fields(content = Field('content')), 
+                        pages = FunctionField('file_pages'), 
                         completed = FunctionField('completed',user),
-                        attachment = Field('file'),
-                        correction = RelationField('serie',Correction).set_fields(
-                                attachment = Field('file'),
-                                pages = RelationField('correction',CorrectionPage).set_fields(content = Field('content')),    
-                        ), 
+                        attachment = Field('file')
+                          
                     ),
                
-                summaries = RelationField('course',Summary).set_fields(
+                summaries = RelationField('course',ContentDocument).set_fields(
                         title = Field('title'),
                         created_at  = Field('created_at'), 
-                        attachment = Field('file'),
-                        pages = RelationField('summary',SummaryPage).set_fields(
-                            content = Field('content')
-                            ), 
+                        attachment = Field('file'),  
+                        pages = FunctionField('file_pages')
 
                          
                     )   
@@ -518,7 +513,8 @@ class GetTeacherDesiplineChapitersAPI(APIView) :
         chapiters = Chapiter.objects.filter(subject = teacher.discipline).serialize( 
              title=Field('title'),
              levels = RelationField('levels'),
-             id = Field('id')
+             id = Field('id'),
+             checked = 'false',
  
         ) 
        
@@ -549,25 +545,51 @@ class CourseAPI(APIView) :
         
         if user.role == 'teacher' :
             status_course = request.data.get('status')
-            title = request.data.get('title')
+            title = request.data.get('title').strip()
             try : 
                 chapiter = Chapiter.objects.get(id = request.data.get('chapiter'))
             except :
                 return Response('invalid chapiter  choice',status=status.HTTP_400_BAD_REQUEST)
+            levels = request.data.get('levels')
+
+
+            
+
             course = Course(
                 status = status_course,
                 teacher =  user,
                 title =  title , 
                 chapiter =  chapiter 
             )
+
+
+
+
             try : 
                 course.full_clean()
                 course.save()
+
+
+                for level in levels : 
+                    try :
+                        course.levels.add(Level.objects.get(id=int(level)))
+                    except :
+                        course.delete(course)
+                        return   Response('invalid level',status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
+
                 return Response(course.id,status=status.HTTP_200_OK)
             except Exception as e :
                 return Response(str(e.messages[0]) , status = status.HTTP_400_BAD_REQUEST)
             
-        else : return Response('ou are not allowed to create a course you must be a teacher')
+            
+
+
+        else : return Response('ou are not allowed to create a course you must be a teacher',status=status.HTTP_400_BAD_REQUEST)
 
 class CoursePkAPI(APIView) : 
     authentication_classes = [TokenAuthentication]
@@ -684,5 +706,15 @@ class VideoAPI(APIView) :
              
                 
             
-        else : return Response('ou are not allowed to create a course you must be a teacher')
-           
+        else : return Response('You are not allowed to create a course you must be a teacher')
+        
+class GetChapiterLevels (APIView) : 
+    def get(self,request,id) : 
+        
+        data = Chapiter.objects.get(id = id).serialize(     
+            id = Field('id'),  
+            levels = RelationField('levels') 
+        )
+ 
+        return Response(data,status=status.HTTP_200_OK)
+   

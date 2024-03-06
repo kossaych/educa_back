@@ -3,6 +3,7 @@ class Serializer:
         self.query_set = query_set 
         self.fields = fields
         self.json_data = []
+     
     
     def serialize(self) :
         if not self._is_iterable(self.query_set):

@@ -34,6 +34,10 @@ urlpatterns = [
     path('api/get_pdf/<str:pdf_filename>/', views.get_pdf, name='get_pdf'),
 
 
+    path('api/get_chapiter_levels/<int:id>/', views.GetChapiterLevels.as_view()),
+
+
+
  
 
 ]

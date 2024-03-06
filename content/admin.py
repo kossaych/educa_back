@@ -19,11 +19,7 @@ admin.site.register(Chapiter)
 admin.site.register(Comment) 
  
 admin.site.register(Video)
-admin.site.register(Summary)
-admin.site.register(Serie)
-admin.site.register(Correction)
+admin.site.register(ContentDocument)
 admin.site.register(Professor)
-
-admin.site.register(SeriePage)
-admin.site.register(CorrectionPage)
+ 
   
